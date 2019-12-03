@@ -1,4 +1,5 @@
 New-EventLog -LogName Application -Source "Terraform Setup Script"
+iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/alexwatto/dsctest/master/install-modules.ps1'))
 Install-Module -Name xWebAdministration -Force
 
 ## Parameters
@@ -533,7 +534,7 @@ $newScript = {
 
 
 }
-iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/alexwatto/dsctest/master/install-modules.ps1'))
+
 
 Write-EventLog -LogName Application -Source "Terraform Setup Script" -EventID 3001 -Message "Hi Ant Can You See Me?."
 ConfigureDisk -NodeName 'localhost' -Drive 'F' -DiskNumber 2
