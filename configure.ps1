@@ -514,7 +514,7 @@ $ScriptBlock = {
 
         refreshenv
     }
-
+$newScript = {
     function choco
     {
 
@@ -523,10 +523,10 @@ $ScriptBlock = {
         #choco install dotnetcore-windowshosting /y
 
     }
-    
+  }
     chocoInstall;
     Write-EventLog -LogName Application -Source "Terraform Setup Script" -EventID 3001 -Message "Installed Chocolatey."
-    choco;
+    Invoke-Command -ScriptBlock $newScript
     Write-EventLog -LogName Application -Source "Terraform Setup Script" -EventID 3001 -Message "Installed Choco Features."
     iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/alexwatto/dsctest/master/ssl_hardening_v3.ps1'))
 
