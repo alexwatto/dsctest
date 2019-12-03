@@ -486,43 +486,54 @@ Configuration WebConfig
     }
   }
 }
+$ScriptBlock = {
+    function chocoInstall 
+    {
+        $chocoExePath = 'C:\ProgramData\Chocolatey\bin'
 
-function chocoInstall 
-{
-    $chocoExePath = 'C:\ProgramData\Chocolatey\bin'
+        if ($($env:Path).ToLower().Contains($($chocoExePath).ToLower())) {
+          echo "Chocolatey found in PATH, skipping install..."
+          Exit
+        }
 
-    if ($($env:Path).ToLower().Contains($($chocoExePath).ToLower())) {
-      echo "Chocolatey found in PATH, skipping install..."
-      Exit
+        # Add to system PATH
+        $systemPath = [Environment]::GetEnvironmentVariable('Path',[System.EnvironmentVariableTarget]::Machine)
+        $systemPath += ';' + $chocoExePath
+        [Environment]::SetEnvironmentVariable("PATH", $systemPath, [System.EnvironmentVariableTarget]::Machine)
+
+        # Update local process' path
+        $userPath = [Environment]::GetEnvironmentVariable('Path',[System.EnvironmentVariableTarget]::User)
+        if($userPath) {
+          $env:Path = $systemPath + ";" + $userPath
+        } else {
+          $env:Path = $systemPath
+        }
+
+        # Run the installer
+        iex ((new-object net.webclient).DownloadString('https://chocolatey.org/install.ps1'))
+
+        refreshenv
     }
 
-    # Add to system PATH
-    $systemPath = [Environment]::GetEnvironmentVariable('Path',[System.EnvironmentVariableTarget]::Machine)
-    $systemPath += ';' + $chocoExePath
-    [Environment]::SetEnvironmentVariable("PATH", $systemPath, [System.EnvironmentVariableTarget]::Machine)
+    function choco
+    {
 
-    # Update local process' path
-    $userPath = [Environment]::GetEnvironmentVariable('Path',[System.EnvironmentVariableTarget]::User)
-    if($userPath) {
-      $env:Path = $systemPath + ";" + $userPath
-    } else {
-      $env:Path = $systemPath
+        choco install urlrewrite /y
+        choco install dotnet4.7.2 /y
+        #choco install dotnetcore-windowshosting /y
+
     }
-
-    # Run the installer
-    iex ((new-object net.webclient).DownloadString('https://chocolatey.org/install.ps1'))
     
-    refreshenv
-}
+    chocoInstall;
+    Write-EventLog -LogName Application -Source "Terraform Setup Script" -EventID 3001 -Message "Installed Chocolatey."
+    choco;
+    Write-EventLog -LogName Application -Source "Terraform Setup Script" -EventID 3001 -Message "Installed Choco Features."
+    iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/alexwatto/dsctest/master/ssl_hardening_v3.ps1'))
 
-function choco
-{
 
-    choco install urlrewrite /y
-    choco install dotnet4.7.2 /y
-    #choco install dotnetcore-windowshosting /y
 
 }
+iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/alexwatto/dsctest/master/install-modules.ps1'))
 
 Write-EventLog -LogName Application -Source "Terraform Setup Script" -EventID 3001 -Message "Hi Ant Can You See Me?."
 ConfigureDisk -NodeName 'localhost' -Drive 'F' -DiskNumber 2
@@ -546,8 +557,5 @@ Start-DSCConfiguration -Path .\InboundRules -Wait -Verbose -Force
 Write-EventLog -LogName Application -Source "Terraform Setup Script" -EventID 3001 -Message "Added Firewall Rules."
 Start-DSCConfiguration -Path .\WebConfig -Wait -Verbose -Force
 Write-EventLog -LogName Application -Source "Terraform Setup Script" -EventID 3001 -Message "Changed Web.Config Max Size."
-chocoInstall;
-Write-EventLog -LogName Application -Source "Terraform Setup Script" -EventID 3001 -Message "Installed Chocolatey."
-choco;
-Write-EventLog -LogName Application -Source "Terraform Setup Script" -EventID 3001 -Message "Installed Choco Features."
-iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/alexwatto/dsctest/master/ssl_hardening_v3.ps1'))
+Invoke-Command -ScriptBlock $ScriptBlock
+
