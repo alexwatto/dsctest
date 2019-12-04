@@ -461,6 +461,7 @@ Configuration InboundRules
 
 Configuration WebConfig
 {
+    
   Import-DscResource -ModuleName PsDesiredStateConfiguration
   
   Node localhost
@@ -487,6 +488,35 @@ Configuration WebConfig
     }
   }
 }
+
+Configuration HostsFileAddEntry
+{
+  param
+    (       
+        [String[]]$NodeName = 'localhost',
+        [String]$WebsiteAdmin = 'shop-admin.bootshearingcare.com',
+        [String]$WebsiteMVC = 'shop.bootshearingcare.com'
+    )
+    Import-DSCResource -ModuleName NetworkingDsc
+
+    Node $NodeName
+    {
+        HostsFile HostsFileAddEntryAdmin
+        {
+            HostName  = '$WebsiteAdmin'
+            IPAddress = '127.0.0.1'
+            Ensure    = 'Present'
+        }
+        
+        HostsFile HostsFileAddEntryAdmin
+        {
+            HostName  = '$WebsiteMVC'
+            IPAddress = '127.0.0.1'
+            Ensure    = 'Present'
+        }
+    }
+}
+
 $ScriptBlock = {
     function chocoInstall 
     {
@@ -543,6 +573,7 @@ CreateKenticoAdminWebsite -NodeName 'localhost' -WwwRoot 'F:\inetpub\wwwroot' -W
 CreateKenticoMvcWebsite -NodeName 'localhost' -WwwRoot 'F:\inetpub\wwwroot' -Website $mvcWebsite 
 InboundRules
 WebConfig
+HostsFileAddEntry -NodeName 'localhost' -WebsiteAdmin $admWebsite -WebsiteMVC $mvcWebsite 
 
 
 
@@ -558,5 +589,7 @@ Start-DSCConfiguration -Path .\InboundRules -Wait -Verbose -Force
 Write-EventLog -LogName Application -Source "Terraform Setup Script" -EventID 3001 -Message "Added Firewall Rules."
 Start-DSCConfiguration -Path .\WebConfig -Wait -Verbose -Force
 Write-EventLog -LogName Application -Source "Terraform Setup Script" -EventID 3001 -Message "Changed Web.Config Max Size."
+Start-DSCConfiguration -Path .\HostsFileAddEntry -Wait -Verbose -Force
+Write-EventLog -LogName Application -Source "Terraform Setup Script" -EventID 3001 -Message "Added Host Entires."
 Invoke-Command -ScriptBlock $ScriptBlock
 
